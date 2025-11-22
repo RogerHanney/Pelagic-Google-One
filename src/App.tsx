@@ -354,7 +354,13 @@ const App: React.FC = () => {
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-xl border-b border-white/10 px-3 py-2 flex items-center justify-between">
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 text-white"><Menu size={20} /></button>
-        <span className="font-bold text-white text-sm">PELAGIC DIVERS</span>
+        <div className="flex items-center gap-2">
+          <img src={BRAND_LOGO} alt="Logo" className="h-6" onError={(e) => e.currentTarget.style.display='none'}/>
+          <div className="text-center">
+            <div className="font-bold text-white text-xs leading-tight">PELAGIC DIVERS</div>
+            <div className="text-[8px] text-blue-300 uppercase tracking-wider">Fuvahmulah</div>
+          </div>
+        </div>
         <div className="w-10" />
       </div>
 
@@ -381,8 +387,18 @@ const App: React.FC = () => {
           <div className="flex-1 flex flex-col h-full relative overflow-hidden">
             <header className="hidden md:flex p-4 justify-between items-center shrink-0">
               <div>
-                <div className="flex items-center gap-2 mb-1"><img src={BRAND_LOGO} alt="Logo" className="h-6" onError={(e) => e.currentTarget.style.display='none'}/><h1 className="text-lg font-bold text-white">PELAGIC DIVERS</h1></div>
-                <div className="text-[10px] uppercase tracking-widest text-blue-300 font-bold">Fuvahmulah • Maldives</div>
+                <div className="flex items-center gap-3 mb-1">
+                  <img src={BRAND_LOGO} alt="Logo" className="h-10" onError={(e) => e.currentTarget.style.display='none'}/>
+                  <div>
+                    <h1 className="text-xl font-bold text-white">PELAGIC DIVERS FUVAHMULAH</h1>
+                    <div className="text-[10px] uppercase tracking-widest text-blue-300 font-bold">Maldives • UNESCO Biosphere</div>
+                  </div>
+                </div>
+                <div className="flex gap-4 text-[10px] text-slate-300 mt-2">
+                  <span>🦈 Tiger Sharks Year-Round</span>
+                  <span>✓ 100% Safety Record</span>
+                  <span>✓ 10+ Years Experience</span>
+                </div>
               </div>
               <div className="bg-black/30 px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2"><Globe size={12} className="text-blue-300" /><span className="text-xs font-medium text-white">{GREETINGS[greetingIdx].text}</span></div>
             </header>
