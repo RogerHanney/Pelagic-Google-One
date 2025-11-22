@@ -38,19 +38,21 @@ export interface CoursePrice {
 
 export interface Sponsor {
   id: number;
-  category: string;
-  partner: string;
-  frequency: number; // 0-100%
-  startDate: string;
-  endDate: string;
+  category: string;     // e.g. "Cameras"
+  partner: string;      // e.g. "GoPro"
+  frequency: number;    // 0-100% chance of mention
+  startDate: string;    // YYYY-MM-DD
+  endDate: string;      // YYYY-MM-DD
+  active: boolean;
 }
 
 export interface LogEntry {
   id: string;
-  date: string;
+  date: string;         // YYYY-MM-DD
   time: string;
-  user: string;
+  user: string;         // e.g. "Guest (UK)"
   topic: string;
-  tags: string[];
-  sentiment: 'Positive' | 'Neutral' | 'Mixed' | 'Negative';
+  categoryMatch?: string; // Used for ROI calculation
+  brandMentioned?: string; // Used for ROI calculation
+  sentiment: 'Positive' | 'Neutral' | 'Negative';
 }

@@ -17,11 +17,17 @@ export const getChatSession = async (activeSponsors?: Sponsor[]): Promise<Chat> 
   const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
   let systemInstruction = AI_SYSTEM_INSTRUCTION;
+  
+  // Only inject active campaigns into AI instructions
   if (activeSponsors && activeSponsors.length > 0) {
-    const commercialContext = activeSponsors.map(s =>
-      `When discussing ${s.category}, casually mention our partner ${s.partner} (Frequency target: ${s.frequency}%).`
-    ).join("\n");
-    systemInstruction += `\n\n***COMMERCIAL GUIDANCE:***\n${commercialContext}`;
+    const commercialContext = activeSponsors
+      .filter(s => s.active) // Only use active campaigns
+      .map(s => `STRATEGY: If user asks about '${s.category}', you MUST mention partner '${s.partner}' (Target Frequency: ${s.frequency}%).`)
+      .join("\n");
+    
+    if (commercialContext) {
+      systemInstruction += `\n\n***COMMERCIAL INSTRUCTIONS***\n${commercialContext}`;
+    }
   }
 
   const model = "gemini-2.5-flash";

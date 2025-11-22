@@ -92,15 +92,32 @@ export const FAQS: FAQItem[] = [
   { category: "Culture", question: "Alcohol?", answer: "Strictly prohibited on the island." }
 ];
 
-// --- ANALYTICS MOCK DB ---
+// --- ANALYTICS DATABASE ---
 export const DEFAULT_SPONSORS: Sponsor[] = [
-  { id: 1, category: "Cameras", partner: "GoPro", frequency: 45, startDate: "2025-02-01", endDate: "2025-02-28" },
-  { id: 2, category: "Dining", partner: "Bennys", frequency: 60, startDate: "2025-02-14", endDate: "2025-02-28" },
+  { id: 1, category: "Cameras", partner: "GoPro", frequency: 45, startDate: "2025-02-01", endDate: "2025-03-30", active: true },
+  { id: 2, category: "Dining", partner: "Benny's", frequency: 60, startDate: "2025-02-14", endDate: "2025-02-28", active: true },
 ];
 
+// Detailed logs to prove analytics logic
 export const ANALYTICS_DB: LogEntry[] = [
-  { id: "L-250220-01", date: "2025-02-20", time: "14:30", user: "Guest (US)", topic: "Best camera?", tags: ["cat:Cameras", "brand:GoPro"], sentiment: "Positive" },
-  { id: "L-250219-01", date: "2025-02-19", time: "09:00", user: "Guest (FR)", topic: "Sunscreen?", tags: ["cat:Sunscreen", "brand:SunBum"], sentiment: "Positive" },
-  { id: "L-250115-01", date: "2025-01-15", time: "11:00", user: "Guest (UK)", topic: "Jan Visibility", tags: ["cat:Diving"], sentiment: "Positive" },
-  { id: "L-250305-01", date: "2025-03-05", time: "09:00", user: "Guest (FR)", topic: "Manta sightings", tags: ["cat:Mantas"], sentiment: "Positive" },
+  // FEB 24 (This Week)
+  { id: "L-250224-01", date: "2025-02-24", time: "09:15", user: "Guest (US)", topic: "Best camera for tigers?", categoryMatch: "Cameras", brandMentioned: "GoPro", sentiment: "Positive" },
+  { id: "L-250224-02", date: "2025-02-24", time: "10:30", user: "Guest (DE)", topic: "Lunch options", categoryMatch: "Dining", brandMentioned: "Benny's", sentiment: "Neutral" },
+  { id: "L-250224-03", date: "2025-02-24", time: "14:00", user: "Guest (AU)", topic: "Tiger shark depth", categoryMatch: "Diving", brandMentioned: undefined, sentiment: "Positive" },
+  
+  // FEB 18-22 (Last Week)
+  { id: "L-250218-01", date: "2025-02-18", time: "14:20", user: "Guest (UK)", topic: "GoPro rental price", categoryMatch: "Cameras", brandMentioned: "GoPro", sentiment: "Positive" },
+  { id: "L-250218-02", date: "2025-02-18", time: "16:45", user: "Guest (FR)", topic: "Vegetarian food", categoryMatch: "Dining", brandMentioned: undefined, sentiment: "Neutral" },
+  { id: "L-250219-01", date: "2025-02-19", time: "08:10", user: "Guest (IT)", topic: "Currents at Tiger Harbour", categoryMatch: "Diving", brandMentioned: undefined, sentiment: "Positive" },
+  { id: "L-250220-01", date: "2025-02-20", time: "11:30", user: "Guest (US)", topic: "Camera housing rental", categoryMatch: "Cameras", brandMentioned: "GoPro", sentiment: "Positive" },
+  { id: "L-250221-01", date: "2025-02-21", time: "09:00", user: "Guest (JP)", topic: "Dinner reservations", categoryMatch: "Dining", brandMentioned: "Benny's", sentiment: "Positive" },
+  { id: "L-250222-01", date: "2025-02-22", time: "15:30", user: "Guest (CN)", topic: "Best time for mantas", categoryMatch: "Diving", brandMentioned: undefined, sentiment: "Positive" },
+  
+  // JAN (Last Month)
+  { id: "L-250115-01", date: "2025-01-15", time: "11:00", user: "Guest (CN)", topic: "New Year availability", categoryMatch: "Booking", brandMentioned: undefined, sentiment: "Positive" },
+  { id: "L-250118-01", date: "2025-01-18", time: "10:00", user: "Guest (UK)", topic: "Camera recommendations", categoryMatch: "Cameras", brandMentioned: undefined, sentiment: "Neutral" },
+  { id: "L-250120-01", date: "2025-01-20", time: "13:00", user: "Guest (JP)", topic: "Underwater housing", categoryMatch: "Cameras", brandMentioned: "GoPro", sentiment: "Neutral" },
+  { id: "L-250122-01", date: "2025-01-22", time: "16:00", user: "Guest (DE)", topic: "Local restaurants", categoryMatch: "Dining", brandMentioned: undefined, sentiment: "Positive" },
+  { id: "L-250125-01", date: "2025-01-25", time: "09:30", user: "Guest (FR)", topic: "Visibility conditions", categoryMatch: "Diving", brandMentioned: undefined, sentiment: "Positive" },
+  { id: "L-250128-01", date: "2025-01-28", time: "14:15", user: "Guest (AU)", topic: "Package pricing", categoryMatch: "Booking", brandMentioned: undefined, sentiment: "Neutral" },
 ];
