@@ -38,7 +38,7 @@ const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
   const [password, setPassword] = useState('');
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if ((email === 'admin@pelagicdivers.com' || email === 'hanneyroger@gmail.com') && password === 'shark') {
+    if ((email === 'admin@pelagicdivers.com' || email === 'hanneyroger@gmail.com' || email === 'inah@pelagicdiversfuvahmulah.com' || email === 'info@pelagicdiversfuvahmulah.com') && password === 'shark') {
       onLogin();
     }
   };
