@@ -448,7 +448,16 @@ const App: React.FC = () => {
                           ?'bg-blue-600 text-white'
                           :'bg-black/60 text-slate-200 border border-white/10'
                       }`}>
-                        <ReactMarkdown>{m.text}</ReactMarkdown>
+                        <ReactMarkdown
+                        components={{
+                          a: ({href, children}) => (
+                            <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline break-all">
+                              {children}
+                            </a>
+                          ),
+                          p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>
+                        }}
+                      >{m.text}</ReactMarkdown>
                       </div>
                     </div>
                   ))}
@@ -456,9 +465,9 @@ const App: React.FC = () => {
                   <div ref={messagesEndRef} />
                 </div>
                 
-                {/* Chat Input - Fixed width container */}
-                <div className="shrink-0 p-2 safe-area-bottom">
-                  <div className="bg-black/70 border border-white/10 rounded-xl p-1.5 flex items-center gap-1">
+                {/* Chat Input - Fixed at bottom with iOS safe area */}
+                <div className="shrink-0 p-2 pb-4" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
+                  <div className="bg-black/70 border border-white/10 rounded-xl p-1.5 flex items-center gap-1 w-full box-border">
                     <input 
                       value={input} 
                       onChange={e => setInput(e.target.value)} 
@@ -466,10 +475,10 @@ const App: React.FC = () => {
                       placeholder="Ask anything..."
                       className="flex-1 bg-transparent text-white px-2 py-1.5 outline-none text-sm min-w-0"
                     />
-                    <button onClick={() => setIsLive(true)} className="shrink-0 p-1.5 text-blue-400 rounded">
+                    <button onClick={() => setIsLive(true)} className="flex-none p-1.5 text-blue-400 rounded">
                       <Mic size={18} />
                     </button>
-                    <button onClick={handleSend} className="shrink-0 p-1.5 bg-blue-600 text-white rounded-lg">
+                    <button onClick={handleSend} className="flex-none p-1.5 bg-blue-600 text-white rounded-lg">
                       <Send size={18} />
                     </button>
                   </div>
