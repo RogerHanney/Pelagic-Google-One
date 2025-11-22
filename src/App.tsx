@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { 
   MessageSquare, BookOpen, HelpCircle, GraduationCap, Mic, Send, 
   LayoutDashboard, Trash2, Globe, Power, X, Menu, Target, TrendingUp,
-  Download, BarChart3, ChevronLeft, Plus
+  Download, BarChart3, ChevronLeft, Calendar
 } from 'lucide-react';
 import { 
   BACKGROUND_IMAGES, GREETINGS, BRAND_LOGO,
@@ -57,10 +57,13 @@ const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
   );
 };
 
-const AdminDashboard = ({ sponsors, setSponsors }: { sponsors: Sponsor[], setSponsors: (s: Sponsor[]) => void }) => {
-  const [dateRange, setDateRange] = useState({ start: '2025-01-01', end: '2025-02-28' });
-  const [filterMode, setFilterMode] = useState<'Custom' | 'TWK' | 'LWK' | 'LMTH'>('Custom');
-  
+// Reusable Date Filter Component
+const DateFilter = ({ dateRange, setDateRange, filterMode, setFilterMode }: {
+  dateRange: { start: string; end: string };
+  setDateRange: (range: { start: string; end: string }) => void;
+  filterMode: string;
+  setFilterMode: (mode: string) => void;
+}) => {
   const applyPreset = (mode: 'TWK' | 'LWK' | 'LMTH') => {
     const today = new Date();
     let start = new Date();
@@ -72,77 +75,229 @@ const AdminDashboard = ({ sponsors, setSponsors }: { sponsors: Sponsor[], setSpo
     setFilterMode(mode);
   };
 
-  const filteredLogs = useMemo(() => ANALYTICS_DB.filter(log => log.date >= dateRange.start && log.date <= dateRange.end), [dateRange]);
+  return (
+    <div className="flex flex-wrap items-center gap-1 text-[10px]">
+      <button onClick={() => applyPreset('TWK')} className={`px-1.5 py-0.5 font-bold rounded ${filterMode==='TWK'?'bg-blue-100 text-blue-600':'text-slate-400 hover:text-slate-600'}`}>TWK</button>
+      <button onClick={() => applyPreset('LWK')} className={`px-1.5 py-0.5 font-bold rounded ${filterMode==='LWK'?'bg-blue-100 text-blue-600':'text-slate-400 hover:text-slate-600'}`}>LWK</button>
+      <button onClick={() => applyPreset('LMTH')} className={`px-1.5 py-0.5 font-bold rounded ${filterMode==='LMTH'?'bg-blue-100 text-blue-600':'text-slate-400 hover:text-slate-600'}`}>LMTH</button>
+      <input 
+        type="date" 
+        value={dateRange.start} 
+        onChange={(e) => { setDateRange({...dateRange, start: e.target.value}); setFilterMode('Custom'); }}
+        className="bg-slate-50 border rounded px-1 py-0.5 w-24 text-[10px]"
+      />
+      <span className="text-slate-300">-</span>
+      <input 
+        type="date" 
+        value={dateRange.end} 
+        onChange={(e) => { setDateRange({...dateRange, end: e.target.value}); setFilterMode('Custom'); }}
+        className="bg-slate-50 border rounded px-1 py-0.5 w-24 text-[10px]"
+      />
+    </div>
+  );
+};
+
+const AdminDashboard = ({ sponsors, setSponsors }: { sponsors: Sponsor[], setSponsors: (s: Sponsor[]) => void }) => {
+  // Separate date states for each panel
+  const [roiDateRange, setRoiDateRange] = useState({ start: '2025-01-01', end: '2025-02-28' });
+  const [roiFilterMode, setRoiFilterMode] = useState('Custom');
+  
+  const [logsDateRange, setLogsDateRange] = useState({ start: '2025-01-01', end: '2025-02-28' });
+  const [logsFilterMode, setLogsFilterMode] = useState('Custom');
+
+  // Filter logs for each panel independently
+  const roiFilteredLogs = useMemo(() => ANALYTICS_DB.filter(log => log.date >= roiDateRange.start && log.date <= roiDateRange.end), [roiDateRange]);
+  const logsFilteredLogs = useMemo(() => ANALYTICS_DB.filter(log => log.date >= logsDateRange.start && log.date <= logsDateRange.end), [logsDateRange]);
+
+  // Campaign stats use ROI date range
   const campaignStats = useMemo(() => sponsors.map(sponsor => {
-    const categoryVol = filteredLogs.filter(l => l.categoryMatch === sponsor.category).length;
-    const brandMentions = filteredLogs.filter(l => l.brandMentioned === sponsor.partner).length;
+    const categoryVol = roiFilteredLogs.filter(l => l.categoryMatch === sponsor.category).length;
+    const brandMentions = roiFilteredLogs.filter(l => l.brandMentioned === sponsor.partner).length;
     const sov = categoryVol > 0 ? Math.round((brandMentions / categoryVol) * 100) : 0;
     return { ...sponsor, categoryVol, brandMentions, sov };
-  }), [filteredLogs, sponsors]);
-  const sentimentScore = useMemo(() => { if (filteredLogs.length === 0) return 0; return Math.round((filteredLogs.filter(l => l.sentiment === 'Positive').length / filteredLogs.length) * 100); }, [filteredLogs]);
-  const totalMentions = useMemo(() => filteredLogs.filter(l => l.brandMentioned).length, [filteredLogs]);
+  }), [roiFilteredLogs, sponsors]);
+
+  // KPIs use logs date range
+  const sentimentScore = useMemo(() => { 
+    if (logsFilteredLogs.length === 0) return 0; 
+    return Math.round((logsFilteredLogs.filter(l => l.sentiment === 'Positive').length / logsFilteredLogs.length) * 100); 
+  }, [logsFilteredLogs]);
+  
+  const totalMentions = useMemo(() => logsFilteredLogs.filter(l => l.brandMentioned).length, [logsFilteredLogs]);
 
   const handleExport = () => {
     const headers = ["Date", "Time", "User", "Topic", "Category", "Brand Mentioned", "Sentiment"];
-    const rows = filteredLogs.map(l => [l.date, l.time, l.user, `"${l.topic}"`, l.categoryMatch || '-', l.brandMentioned || '-', l.sentiment].join(","));
+    const rows = logsFilteredLogs.map(l => [l.date, l.time, l.user, `"${l.topic}"`, l.categoryMatch || '-', l.brandMentioned || '-', l.sentiment].join(","));
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
     const link = document.createElement("a");
     link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", `pelagic_analytics_${dateRange.start}_to_${dateRange.end}.csv`);
+    link.setAttribute("download", `pelagic_logs_${logsDateRange.start}_to_${logsDateRange.end}.csv`);
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
   };
 
   return (
     <div className="h-full flex flex-col bg-slate-50 text-slate-900 overflow-x-hidden">
-      <header className="bg-white border-b p-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shrink-0">
+      {/* Simple Header */}
+      <header className="bg-white border-b p-3 flex justify-between items-center shrink-0">
         <h2 className="text-lg font-bold flex items-center gap-2"><LayoutDashboard className="text-blue-600" /> Operations</h2>
-        <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1 rounded-lg border text-xs w-full md:w-auto">
-          <button onClick={() => applyPreset('TWK')} className={`px-2 py-1 font-bold rounded ${filterMode==='TWK'?'bg-white shadow text-blue-600':'text-slate-500'}`}>TWK</button>
-          <button onClick={() => applyPreset('LWK')} className={`px-2 py-1 font-bold rounded ${filterMode==='LWK'?'bg-white shadow text-blue-600':'text-slate-500'}`}>LWK</button>
-          <button onClick={() => applyPreset('LMTH')} className={`px-2 py-1 font-bold rounded ${filterMode==='LMTH'?'bg-white shadow text-blue-600':'text-slate-500'}`}>LMTH</button>
-          <input type="date" value={dateRange.start} onChange={(e) => { setDateRange(p => ({...p, start: e.target.value})); setFilterMode('Custom'); }} className="bg-transparent outline-none flex-1 min-w-0 max-w-24" />
-          <input type="date" value={dateRange.end} onChange={(e) => { setDateRange(p => ({...p, end: e.target.value})); setFilterMode('Custom'); }} className="bg-transparent outline-none flex-1 min-w-0 max-w-24" />
-          <button onClick={handleExport} className="flex items-center gap-1 font-bold text-green-600 px-2 py-1"><Download size={12} /> CSV</button>
-        </div>
+        <div className="text-xs text-slate-400">Pelagic Divers Admin</div>
       </header>
+
       <div className="flex-1 overflow-auto p-4">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <div className="bg-white p-3 rounded-xl border"><div className="text-slate-500 text-[10px] font-bold uppercase mb-1">Conversations</div><div className="text-2xl font-bold">{filteredLogs.length}</div></div>
-          <div className="bg-white p-3 rounded-xl border"><div className="text-slate-500 text-[10px] font-bold uppercase mb-1">Sentiment</div><div className={`text-2xl font-bold ${sentimentScore >= 70 ? 'text-green-500' : 'text-orange-500'}`}>{sentimentScore}%</div></div>
-          <div className="bg-white p-3 rounded-xl border"><div className="text-slate-500 text-[10px] font-bold uppercase mb-1">Mentions</div><div className="text-2xl font-bold text-blue-600">{totalMentions}</div></div>
-          <div className="bg-white p-3 rounded-xl border flex flex-col justify-center items-center cursor-pointer hover:bg-blue-50 border-dashed border-blue-200 text-blue-500"><Plus size={20} /><span className="text-[10px] font-bold">Report</span></div>
-        </div>
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="space-y-6">
+        <div className="grid lg:grid-cols-3 gap-4">
+          
+          {/* LEFT COLUMN */}
+          <div className="space-y-4">
+            
+            {/* CAMPAIGN INPUT - with its own date range */}
             <div className="bg-white p-4 rounded-xl border">
-              <h3 className="font-bold mb-4 flex items-center gap-2 text-sm"><Target size={16} className="text-red-500"/> Campaign Input</h3>
-              <form onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.currentTarget); setSponsors([...sponsors, { id: Date.now(), category: f.get('cat') as string, partner: f.get('partner') as string, frequency: Number(f.get('freq')), startDate: f.get('start') as string, endDate: f.get('end') as string, active: true }]); (e.target as HTMLFormElement).reset(); }} className="space-y-3">
-                <div className="grid grid-cols-2 gap-2"><input name="cat" placeholder="Category" className="w-full p-2 border rounded text-sm" required /><input name="partner" placeholder="Partner" className="w-full p-2 border rounded text-sm" required /></div>
-                <div className="grid grid-cols-3 gap-2"><input name="freq" type="number" defaultValue={40} className="w-full p-2 border rounded text-sm" /><input name="start" type="date" className="w-full p-2 border rounded text-sm" required /><input name="end" type="date" className="w-full p-2 border rounded text-sm" required /></div>
-                <button className="w-full bg-blue-600 text-white p-2 rounded font-bold text-sm">Launch</button>
+              <h3 className="font-bold mb-3 flex items-center gap-2 text-sm"><Target size={16} className="text-red-500"/> New Campaign</h3>
+              <form onSubmit={(e) => { 
+                e.preventDefault(); 
+                const f = new FormData(e.currentTarget); 
+                setSponsors([...sponsors, { 
+                  id: Date.now(), 
+                  category: f.get('cat') as string, 
+                  partner: f.get('partner') as string, 
+                  frequency: Number(f.get('freq')), 
+                  startDate: f.get('start') as string, 
+                  endDate: f.get('end') as string, 
+                  active: true 
+                }]); 
+                (e.target as HTMLFormElement).reset(); 
+              }} className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <input name="cat" placeholder="Category" className="w-full p-2 border rounded text-sm" required />
+                  <input name="partner" placeholder="Partner" className="w-full p-2 border rounded text-sm" required />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Target Frequency %</label>
+                  <input name="freq" type="number" defaultValue={40} min={1} max={100} className="w-full p-2 border rounded text-sm" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1 flex items-center gap-1"><Calendar size={10}/> Campaign Duration</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input name="start" type="date" className="w-full p-2 border rounded text-sm" required />
+                    <input name="end" type="date" className="w-full p-2 border rounded text-sm" required />
+                  </div>
+                </div>
+                <button className="w-full bg-blue-600 text-white p-2 rounded font-bold text-sm hover:bg-blue-700 transition-colors">Launch Campaign</button>
               </form>
             </div>
+
+            {/* ACTIVE ROI - with its own date filter */}
             <div className="bg-white p-4 rounded-xl border">
-              <h3 className="font-bold mb-4 flex items-center gap-2 text-sm"><TrendingUp size={16} className="text-green-500"/> Active ROI</h3>
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="font-bold flex items-center gap-2 text-sm"><TrendingUp size={16} className="text-green-500"/> Active ROI</h3>
+              </div>
+              {/* ROI Date Filter */}
+              <div className="mb-3 pb-3 border-b">
+                <DateFilter 
+                  dateRange={roiDateRange} 
+                  setDateRange={setRoiDateRange}
+                  filterMode={roiFilterMode}
+                  setFilterMode={setRoiFilterMode}
+                />
+              </div>
               <div className="space-y-3">
+                {campaignStats.length === 0 && <p className="text-xs text-slate-400 text-center py-4">No campaigns</p>}
                 {campaignStats.map(s => (
                   <div key={s.id} className={`p-3 rounded-lg border ${s.active ? 'bg-slate-50' : 'bg-slate-100 opacity-60'}`}>
-                    <div className="flex justify-between items-start mb-1"><span className="font-bold text-sm">{s.partner}</span><div className="flex gap-1"><button onClick={() => setSponsors(sponsors.map(x => x.id === s.id ? { ...x, active: !x.active } : x))} className="text-slate-400 hover:text-blue-500 p-1"><Power size={12} /></button><button onClick={() => setSponsors(sponsors.filter(x => x.id !== s.id))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 size={12} /></button></div></div>
-                    <div className="text-[10px] text-slate-500">{s.category} • Target: {s.frequency}%</div>
-                    <div className="flex justify-between items-end mt-2"><span className="text-[10px] text-slate-400">{s.brandMentions}/{s.categoryVol}</span><span className="text-lg font-bold text-blue-600">{s.sov}%</span></div>
-                    <div className="h-1 w-full bg-slate-200 rounded-full mt-2"><div className={`h-full rounded-full ${s.sov >= s.frequency ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${Math.min(s.sov, 100)}%` }} /></div>
+                    <div className="flex justify-between items-start mb-1">
+                      <div>
+                        <span className="font-bold text-sm">{s.partner}</span>
+                        <span className={`ml-2 text-[9px] px-1 py-0.5 rounded ${s.active ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-500'}`}>
+                          {s.active ? 'LIVE' : 'PAUSED'}
+                        </span>
+                      </div>
+                      <div className="flex gap-1">
+                        <button onClick={() => setSponsors(sponsors.map(x => x.id === s.id ? { ...x, active: !x.active } : x))} className="text-slate-400 hover:text-blue-500 p-1"><Power size={12} /></button>
+                        <button onClick={() => setSponsors(sponsors.filter(x => x.id !== s.id))} className="text-slate-400 hover:text-red-500 p-1"><Trash2 size={12} /></button>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-slate-500 mb-1">{s.category} • Target: {s.frequency}%</div>
+                    <div className="text-[9px] text-slate-400 mb-2 flex items-center gap-1">
+                      <Calendar size={9}/> {s.startDate} → {s.endDate}
+                    </div>
+                    <div className="flex justify-between items-end">
+                      <span className="text-[10px] text-slate-400">{s.brandMentions}/{s.categoryVol} mentions</span>
+                      <span className={`text-lg font-bold ${s.sov >= s.frequency ? 'text-green-500' : 'text-blue-600'}`}>{s.sov}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-200 rounded-full mt-2 overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${s.sov >= s.frequency ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${Math.min(s.sov, 100)}%` }} />
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-          <div className="lg:col-span-2 bg-white rounded-xl border flex flex-col min-h-[300px]">
-            <div className="p-4 border-b flex justify-between items-center"><h3 className="font-bold flex items-center gap-2 text-sm"><BarChart3 size={16} /> Logs</h3><span className="text-xs text-slate-400">{filteredLogs.length} records</span></div>
-            <div className="flex-1 overflow-auto">
+
+          {/* RIGHT COLUMN - LOGS with its own date filter */}
+          <div className="lg:col-span-2 bg-white rounded-xl border flex flex-col">
+            <div className="p-4 border-b">
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="font-bold flex items-center gap-2 text-sm"><BarChart3 size={16} /> Chat Logs</h3>
+                <button onClick={handleExport} className="flex items-center gap-1 text-[10px] font-bold text-green-600 hover:bg-green-50 px-2 py-1 rounded transition-colors">
+                  <Download size={10} /> CSV
+                </button>
+              </div>
+              {/* Logs Date Filter */}
+              <DateFilter 
+                dateRange={logsDateRange} 
+                setDateRange={setLogsDateRange}
+                filterMode={logsFilterMode}
+                setFilterMode={setLogsFilterMode}
+              />
+            </div>
+            
+            {/* KPI Summary for this date range */}
+            <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 border-b">
+              <div className="text-center">
+                <div className="text-[9px] text-slate-500 uppercase font-bold">Chats</div>
+                <div className="text-lg font-bold">{logsFilteredLogs.length}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[9px] text-slate-500 uppercase font-bold">Sentiment</div>
+                <div className={`text-lg font-bold ${sentimentScore >= 70 ? 'text-green-500' : 'text-orange-500'}`}>{sentimentScore}%</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[9px] text-slate-500 uppercase font-bold">Mentions</div>
+                <div className="text-lg font-bold text-blue-600">{totalMentions}</div>
+              </div>
+            </div>
+
+            {/* Logs Table */}
+            <div className="flex-1 overflow-auto max-h-[400px]">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 sticky top-0"><tr><th className="p-2">Date</th><th className="p-2">User</th><th className="p-2 hidden md:table-cell">Topic</th><th className="p-2">Tags</th><th className="p-2">Sent</th></tr></thead>
+                <thead className="bg-slate-50 sticky top-0">
+                  <tr>
+                    <th className="p-2 font-bold">Date</th>
+                    <th className="p-2 font-bold">User</th>
+                    <th className="p-2 font-bold hidden md:table-cell">Topic</th>
+                    <th className="p-2 font-bold">Tags</th>
+                    <th className="p-2 font-bold">Sent</th>
+                  </tr>
+                </thead>
                 <tbody className="divide-y">
-                  {filteredLogs.map(log => (<tr key={log.id} className="hover:bg-slate-50"><td className="p-2">{log.date}</td><td className="p-2">{log.user}</td><td className="p-2 hidden md:table-cell">{log.topic}</td><td className="p-2">{log.brandMentioned && <span className="px-1 py-0.5 bg-green-100 text-green-700 rounded text-[9px]">{log.brandMentioned}</span>}</td><td className="p-2"><span className={`px-1 py-0.5 rounded text-[9px] font-bold ${log.sentiment === 'Positive' ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-500'}`}>{log.sentiment.charAt(0)}</span></td></tr>))}
+                  {logsFilteredLogs.map(log => (
+                    <tr key={log.id} className="hover:bg-slate-50">
+                      <td className="p-2 whitespace-nowrap">{log.date}</td>
+                      <td className="p-2">{log.user}</td>
+                      <td className="p-2 hidden md:table-cell max-w-[150px] truncate">{log.topic}</td>
+                      <td className="p-2">
+                        {log.categoryMatch && <span className="px-1 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] mr-1">{log.categoryMatch}</span>}
+                        {log.brandMentioned && <span className="px-1 py-0.5 bg-green-100 text-green-700 rounded text-[9px]">{log.brandMentioned}</span>}
+                      </td>
+                      <td className="p-2">
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${log.sentiment === 'Positive' ? 'bg-green-50 text-green-600' : log.sentiment === 'Negative' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'}`}>
+                          {log.sentiment.charAt(0)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {logsFilteredLogs.length === 0 && (
+                    <tr><td colSpan={5} className="p-8 text-center text-slate-400">No logs for selected period</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
