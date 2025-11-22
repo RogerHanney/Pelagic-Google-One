@@ -537,13 +537,13 @@ const App: React.FC = () => {
                 
                 {/* Chat Input */}
                 <div className="shrink-0 p-3 md:p-4 bg-gradient-to-t from-slate-900/80 to-transparent">
-                  <div className="bg-black/60 border border-white/10 rounded-xl md:rounded-2xl p-2 flex gap-2">
+                  <div className="bg-black/60 border border-white/10 rounded-xl md:rounded-2xl p-2 flex gap-2 max-w-full overflow-hidden">
                     <input 
                       value={input} 
                       onChange={e => setInput(e.target.value)} 
                       onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
                       placeholder="Ask anything..."
-                      className="flex-1 bg-transparent text-white px-3 md:px-4 py-2 outline-none text-sm md:text-base"
+                      className="flex-1 bg-transparent text-white px-3 md:px-4 py-2 outline-none text-sm md:text-base min-w-0"
                     />
                     <button onClick={() => setIsLive(true)} className="p-2 text-blue-400 hover:bg-white/10 rounded-lg transition-colors">
                       <Mic size={18} />
