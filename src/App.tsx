@@ -33,13 +33,14 @@ const ImmersiveBackground = () => {
   );
 };
 
-const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
+const AdminLogin = ({ onLogin }: { onLogin: (remember: boolean) => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if ((email === 'admin@pelagicdivers.com' || email === 'hanneyroger@gmail.com' || email === 'inah@pelagicdiversfuvahmulah.com' || email === 'info@pelagicdiversfuvahmulah.com') && password === 'shark') {
-      onLogin();
+      onLogin(remember);
     }
   };
   return (
@@ -50,6 +51,10 @@ const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="w-full p-3 border rounded-lg" />
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" className="w-full p-3 border rounded-lg" />
+          <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+            <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} className="w-4 h-4 rounded border-slate-300" />
+            Stay logged in
+          </label>
           <button type="submit" className="w-full bg-blue-900 text-white p-3 rounded-lg font-bold">Login</button>
         </form>
       </div>
@@ -167,17 +172,26 @@ const AdminDashboard = ({ sponsors, setSponsors }: { sponsors: Sponsor[], setSpo
                 (e.target as HTMLFormElement).reset(); 
               }} className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
-                  <input name="cat" placeholder="Category" className="w-full p-2 border rounded text-sm" required />
-                  <input name="partner" placeholder="Partner" className="w-full p-2 border rounded text-sm" required />
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Category</label>
+                    <input name="cat" placeholder="e.g. Cameras" className="w-full p-2 border rounded text-sm" required />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Partner Brand</label>
+                    <input name="partner" placeholder="e.g. GoPro" className="w-full p-2 border rounded text-sm" required />
+                  </div>
                 </div>
                 <div>
                   <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Target Frequency %</label>
                   <input name="freq" type="number" defaultValue={40} min={1} max={100} className="w-full p-2 border rounded text-sm" />
                 </div>
-                <div>
-                  <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1 flex items-center gap-1"><Calendar size={10}/> Campaign Duration</label>
-                  <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1 flex items-center gap-1"><Calendar size={10}/> Start Date</label>
                     <input name="start" type="date" className="w-full p-2 border rounded text-sm" required />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1 flex items-center gap-1"><Calendar size={10}/> End Date</label>
                     <input name="end" type="date" className="w-full p-2 border rounded text-sm" required />
                   </div>
                 </div>
@@ -310,7 +324,9 @@ const AdminDashboard = ({ sponsors, setSponsors }: { sponsors: Sponsor[], setSpo
 
 const App: React.FC = () => {
   const [appMode, setAppMode] = useState<'cx' | 'admin'>('cx');
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try { return localStorage.getItem('pelagic_admin') === 'true'; } catch { return false; }
+  });
   const [activeView, setActiveView] = useState<'chat' | 'packages' | 'courses' | 'faq'>('chat');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -321,6 +337,13 @@ const App: React.FC = () => {
   const [sponsors, setSponsors] = useState<Sponsor[]>(DEFAULT_SPONSORS);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initRef = useRef(false);
+
+  const handleAdminLogin = (remember: boolean) => {
+    setIsAdmin(true);
+    if (remember) {
+      try { localStorage.setItem('pelagic_admin', 'true'); } catch {}
+    }
+  };
 
   useEffect(() => {
     if (!initRef.current) {
@@ -382,7 +405,7 @@ const App: React.FC = () => {
 
       <main className="fixed top-0 right-0 bottom-0 left-0 md:left-16 flex flex-col pt-12 md:pt-0">
         {appMode === 'admin' ? (
-          isAdmin ? <AdminDashboard sponsors={sponsors} setSponsors={setSponsors} /> : <AdminLogin onLogin={() => setIsAdmin(true)} />
+          isAdmin ? <AdminDashboard sponsors={sponsors} setSponsors={setSponsors} /> : <AdminLogin onLogin={handleAdminLogin} />
         ) : (
           <div className="flex-1 flex flex-col h-full relative overflow-hidden">
             <header className="hidden md:flex p-4 justify-between items-center shrink-0">
