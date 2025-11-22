@@ -1,0 +1,7 @@
+{
+  "name": "Pelagic Divers Fuvahmulah Assistant",
+  "description": "A comprehensive diver's helper app for Pelagic Divers Fuvahmulah featuring AI-assisted support, package pricing, and FAQ.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
