@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { 
   MessageSquare, BookOpen, HelpCircle, GraduationCap, Mic, Send, 
-  LayoutDashboard, Sun, Moon, Trash2, Plus, Search, Download, 
-  X, Anchor, Power, LogIn, Target, TrendingUp, Globe, Check, ExternalLink
+  LayoutDashboard, Trash2, Globe, Power, X
 } from 'lucide-react';
 import { 
   BACKGROUND_IMAGES, GREETINGS, BRAND_LOGO,
-  ANALYTICS_DB, DEFAULT_SPONSORS, 
-  FREEDIVING_PRICES, SCUBA_PRICES, COURSES, FAQS
+  DEFAULT_SPONSORS
 } from './constants';
-import { sendMessageToGemini, connectLiveSession, decodeAudioData } from './services/geminiService';
-import { ChatMessage, PackageType, Sponsor } from './types';
+import { sendMessageToGemini } from './services/geminiService';
+import { ChatMessage, Sponsor } from './types';
+import { Packages } from './pages/Packages';
+import { Courses } from './pages/Courses';
+import { FAQ } from './pages/FAQ';
 
 // --- COMPONENTS ---
 
@@ -129,7 +130,7 @@ const App: React.FC = () => {
                </header>
                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="bg-white p-6 rounded-xl border shadow-sm">
-                    <h3 className="font-bold mb-4 flex items-center gap-2"><Target size={18}/> Campaign Strategy</h3>
+                    <h3 className="font-bold mb-4 flex items-center gap-2">Campaign Strategy</h3>
                     <p className="text-sm text-slate-500 mb-4">Add partners to influence AI answers.</p>
                     <form onSubmit={(e) => {
                         e.preventDefault();
@@ -145,7 +146,7 @@ const App: React.FC = () => {
                     </form>
                   </div>
                   <div className="lg:col-span-2 bg-white p-6 rounded-xl border shadow-sm">
-                    <h3 className="font-bold mb-4 flex items-center gap-2"><TrendingUp size={18}/> Active Campaigns</h3>
+                    <h3 className="font-bold mb-4 flex items-center gap-2">Active Campaigns</h3>
                     <table className="w-full text-left text-sm">
                         <thead className="bg-slate-50"><tr><th className="p-3">Category</th><th className="p-3">Partner</th><th className="p-3">Target</th><th className="p-3">Action</th></tr></thead>
                         <tbody>
@@ -183,51 +184,18 @@ const App: React.FC = () => {
             <div className="flex-1 relative overflow-hidden">
                {activeView !== 'chat' && (
                  <div className="absolute inset-0 bg-slate-900/95 backdrop-blur-xl z-20 flex flex-col animate-in slide-in-from-bottom-5">
-                    <div className="flex justify-between p-8">
+                    <div className="flex justify-between items-center p-6 border-b border-white/10">
                         <h2 className="text-2xl font-bold text-white">
                             {activeView==='packages' && 'Packages & Pricing'}
                             {activeView==='courses' && 'SSI Certifications'}
-                            {activeView==='faq' && 'FAQ'}
+                            {activeView==='faq' && 'Frequently Asked Questions'}
                         </h2>
-                        <button onClick={() => setActiveView('chat')}><X className="text-white" /></button>
+                        <button onClick={() => setActiveView('chat')} className="p-2 hover:bg-white/10 rounded-lg transition-colors"><X className="text-white" /></button>
                     </div>
-                    <div className="flex-1 overflow-auto p-8 pt-0">
-                        {activeView === 'packages' && (
-                            <div className="space-y-4">
-                                <a href="https://www.pelagicdiversfuvahmulah.com/packages/" target="_blank" className="text-blue-300 underline block mb-4">View Full Packages Online</a>
-                                <div className="grid md:grid-cols-3 gap-4">
-                                    {SCUBA_PRICES.map((p, i) => (
-                                        <div key={i} className="bg-white/5 p-4 rounded border border-white/10">
-                                            <div className="font-bold text-white">{p.nights} Nights</div>
-                                            <div className="text-sm text-slate-400">Basic: ${p.basic}</div>
-                                            <div className="text-sm text-slate-400">Deluxe: ${p.deluxe}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {activeView === 'courses' && (
-                            <div className="space-y-2">
-                                <div className="text-blue-300 mb-4 font-bold">SSI CENTER ONLY</div>
-                                {COURSES.map((c, i) => (
-                                    <div key={i} className="flex justify-between bg-white/5 p-3 rounded border border-white/10">
-                                        <span className="text-white">{c.name}</span>
-                                        <span className="font-mono font-bold">${c.price}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        {activeView === 'faq' && (
-                            <div className="space-y-4">
-                                {FAQS.map((f, i) => (
-                                    <div key={i} className="bg-white/5 p-4 rounded border border-white/10">
-                                        <div className="text-blue-300 text-xs uppercase mb-1">{f.category}</div>
-                                        <div className="font-bold text-white mb-1">{f.question}</div>
-                                        <div className="text-sm text-slate-300">{f.answer}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                    <div className="flex-1 overflow-auto">
+                        {activeView === 'packages' && <Packages />}
+                        {activeView === 'courses' && <Courses />}
+                        {activeView === 'faq' && <FAQ />}
                     </div>
                  </div>
                )}
