@@ -333,6 +333,66 @@ const App: React.FC = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isLive, setIsLive] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<'connecting' | 'listening' | 'error'>('connecting');
+  const liveSessionRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  const startLiveSession = async () => {
+    setIsLive(true);
+    setLiveStatus('connecting');
+    try {
+      const { connectLiveSession, decodeAudioData } = await import('./services/geminiService');
+      
+      // Initialize audio playback
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      audioContextRef.current = new AudioContextClass({ sampleRate: 24000 });
+      
+      const session = await connectLiveSession({
+        onOpen: () => setLiveStatus('listening'),
+        onAudioData: async (base64Audio: string) => {
+          if (audioContextRef.current) {
+            const buffer = await decodeAudioData(base64Audio, audioContextRef.current);
+            const source = audioContextRef.current.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContextRef.current.destination);
+            source.start();
+          }
+        },
+        onClose: () => {
+          setIsLive(false);
+          setLiveStatus('connecting');
+        },
+        onError: (error: any) => {
+          console.error('Live session error:', error);
+          setLiveStatus('error');
+        }
+      });
+      
+      liveSessionRef.current = session;
+    } catch (error) {
+      console.error('Failed to start live session:', error);
+      setLiveStatus('error');
+    }
+  };
+
+  const stopLiveSession = async () => {
+    if (liveSessionRef.current) {
+      await liveSessionRef.current.disconnect();
+      liveSessionRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    setIsLive(false);
+    setLiveStatus('connecting');
+  };
+
+  useEffect(() => {
+    if (isLive && !liveSessionRef.current) {
+      startLiveSession();
+    }
+  }, [isLive]);
   const [greetingIdx, setGreetingIdx] = useState(0);
   const [sponsors, setSponsors] = useState<Sponsor[]>(DEFAULT_SPONSORS);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -448,7 +508,18 @@ const App: React.FC = () => {
                     <div className={`max-w-[85%] p-3 rounded-xl text-sm ${m.role==='user'?'bg-blue-600 text-white':'bg-black/60 text-slate-200 border border-white/10'}`}>
                       <ReactMarkdown components={{
                         a: ({href, children}) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline break-all">{children}</a>,
-                        p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>
+                        p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
+                        text: ({children}) => {
+                          // Auto-linkify plain URLs
+                          if (typeof children === 'string') {
+                            const urlRegex = /(https?:\/\/[^\s]+)/g;
+                            const parts = children.split(urlRegex);
+                            return <>{parts.map((part, i) => 
+                              urlRegex.test(part) ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline break-all">{part}</a> : part
+                            )}</>;
+                          }
+                          return <>{children}</>;
+                        }
                       }}>{m.text}</ReactMarkdown>
                     </div>
                   </div>
@@ -469,7 +540,7 @@ const App: React.FC = () => {
                   className="flex-1 bg-transparent text-white px-3 py-2 outline-none text-base min-w-0"
                   style={{ fontSize: '16px' }}
                 />
-                <button onClick={() => setIsLive(true)} className="w-10 h-10 flex-shrink-0 flex items-center justify-center text-blue-400">
+                <button onClick={startLiveSession} className="w-10 h-10 flex-shrink-0 flex items-center justify-center text-blue-400">
                   <Mic size={20} />
                 </button>
                 <button onClick={handleSend} className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-blue-600 text-white rounded-lg">
@@ -483,9 +554,19 @@ const App: React.FC = () => {
       
       {isLive && (
         <div className="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center text-white p-4">
-          <div className="animate-pulse mb-6"><Mic size={40} className="text-blue-500" /></div>
-          <h2 className="text-lg font-light tracking-widest mb-6">LISTENING...</h2>
-          <button onClick={() => setIsLive(false)} className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-2 rounded-full flex gap-2 items-center text-sm"><Power size={16} /> END</button>
+          <div className="animate-pulse mb-6"><Mic size={48} className={liveStatus === 'error' ? 'text-red-500' : 'text-blue-500'} /></div>
+          <h2 className="text-xl font-light tracking-widest mb-2">
+            {liveStatus === 'connecting' && 'CONNECTING...'}
+            {liveStatus === 'listening' && 'LISTENING...'}
+            {liveStatus === 'error' && 'CONNECTION ERROR'}
+          </h2>
+          <p className="text-sm text-slate-400 mb-8">
+            {liveStatus === 'listening' && 'Speak naturally - I can hear you'}
+            {liveStatus === 'error' && 'Check microphone permissions'}
+          </p>
+          <button onClick={stopLiveSession} className="bg-red-500/20 border border-red-500 text-red-200 px-6 py-3 rounded-full flex gap-2 items-center text-sm hover:bg-red-500/30 transition-colors">
+            <Power size={18} /> END SESSION
+          </button>
         </div>
       )}
     </div>
